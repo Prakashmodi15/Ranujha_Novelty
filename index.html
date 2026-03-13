@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1000, maximum-scale=1.0, user-scalable=yes">
-  <title>🎁 गिफ्ट · लोडिंग एनिमेशन</title>
+  <meta name="viewport" content="width=1000.0, maximum-scale=1.0, user-scalable=yes">
+  <title>🎁 open · gift box</title>
   <style>
     * {
       margin: 0;
@@ -147,11 +147,11 @@
 </head>
 <body>
 
-  <h2 id="heading">🎁 उपहार खोलें</h2>
+  <h2 id="heading">🎁 tap the gift</h2>
   <div id="gift" onclick="handleGiftTap()">🎁</div>
   <div id="lottie-container"></div>
   <div id="result"></div>
-  <div id="winner">🎉 बधाई हो! आप जीत गए 🎉</div>
+  <div id="winner">🎉 Congratulations! You Won 🎉</div>
   
   <audio id="giftSound" preload="auto">
     <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3" type="audio/mpeg">
@@ -189,7 +189,7 @@
         'https://picsum.photos/id/18/600/800'
       ];
 
-      // confetti functions (same as before)
+      // confetti functions
       function initConfetti(width, height) {
         const newPieces = [];
         for (let i = 0; i < 180; i++) {
@@ -267,66 +267,51 @@
         }
       });
 
-      // मुख्य फंक्शन: गिफ्ट क्लिक पर
+      // main gift tap handler
       window.handleGiftTap = function() {
         if (isOpened) return;
         isOpened = true;
 
-        // sound play
         if (sound) {
           sound.play().catch(e => console.log('audio play error', e));
         }
 
         gift.classList.add('open');
 
-        // गिफ्ट को छुपाओ और Lottie container दिखाओ
         setTimeout(() => {
           gift.style.display = 'none';
           heading.style.display = 'none';
           
-          // Lottie एनिमेशन शुरू करो (अगर पहले से नहीं चल रहा)
           lottieContainer.style.display = 'flex';
           
-          // Lottie JSON फाइल को लोड करो (animation.json उसी फोल्डर में)
           if (!lottieInstance) {
             lottieInstance = lottie.loadAnimation({
               container: lottieContainer,
               renderer: 'svg',
               loop: true,
               autoplay: true,
-              path: 'animation.json'  // यहाँ external JSON file का path
+              path: 'animation.json'  // external JSON file
             });
           }
 
-          // अब random image पहले से लोड करना शुरू करो
           const randomIndex = Math.floor(Math.random() * giftImages.length);
           const imgUrl = giftImages[randomIndex];
 
-          // एक hidden image बनाओ यह देखने के लिए कि वह लोड हुई या नहीं
           const preloadImg = new Image();
           preloadImg.src = imgUrl;
 
-          // जैसे ही image लोड हो, एनिमेशन हटाकर image दिखाओ
           preloadImg.onload = function() {
-            // Lottie बंद करो और container छुपाओ
             if (lottieInstance) {
               lottieInstance.destroy();
               lottieInstance = null;
             }
             lottieContainer.style.display = 'none';
-
-            // image inject करो
             resultDiv.innerHTML = `<img src="${imgUrl}" alt="random gift" />`;
             winnerDiv.style.display = 'block';
-            
-            // confetti शुरू करो
             startConfetti();
           };
 
-          // अगर image लोड होने में बहुत देर हो (network issue), तो भी कुछ देर बाद दिखा दो
-          // ये optional है, लेकिन अच्छा रहेगा
           preloadImg.onerror = function() {
-            // fallback: कोई दूसरी image या वही try करो
             if (lottieInstance) {
               lottieInstance.destroy();
               lottieInstance = null;
@@ -337,10 +322,10 @@
             startConfetti();
           };
 
-        }, 600); // गिफ्ट के open एनिमेशन के बाद
+        }, 600);
       };
 
-      // पेज लोड या रीलोड पर रीसेट
+      // reset on page load
       window.addEventListener('load', function() {
         isOpened = false;
         gift.style.display = 'inline-block';
