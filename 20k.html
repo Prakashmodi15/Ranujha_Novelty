@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1000.0, maximum-scale=1.0, user-scalable=yes">
+  <title>🎁 open · gift box</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      padding: 1.5rem 1.2rem;
+      position: relative;
+      overflow-x: hidden;
+      color: #1e293b;
+    }
+
+    h2 {
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: 1px;
+      margin-bottom: 2rem;
+      color: #334155;
+      background: rgba(255,255,255,0.8);
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+
+    #gift {
+      font-size: clamp(140px, 60vw, 300px);
+      line-height: 1;
+      cursor: pointer;
+      display: inline-block;
+      transform-origin: center center;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,0.1));
+      animation: bounceIn 0.7s ease forwards;
+      margin: 0.2rem 0;
+      text-shadow: 2px 8px 12px rgba(0,0,0,0.08);
+      z-index: 20;
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.2); opacity: 0; }
+      50% { transform: scale(1.2); opacity: 1; }
+      80% { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #gift.open {
+      transform: scale(1.5) rotate(8deg) !important;
+      transition: transform 0.4s cubic-bezier(0.25, 1.3, 0.5, 1.2);
+    }
+
+    #lottie-container {
+      width: min(400px, 80vw);
+      height: min(400px, 80vw);
+      margin: 1rem auto;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+      border-radius: 32px;
+    }
+
+    #result {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0 0.5rem;
+    }
+
+    #result img {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      border-radius: 32px;
+      box-shadow: 0 20px 30px -8px rgba(0,0,0,0.15);
+      animation: popWinner 0.6s cubic-bezier(0.21, 1.11, 0.38, 1.1);
+      border: 2px solid rgba(255,255,255,0.5);
+      background: #fafafa;
+    }
+
+    @keyframes popWinner {
+      0% { transform: scale(0.3); opacity: 0; }
+      80% { transform: scale(1.03); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #winner {
+      font-size: clamp(28px, 8vw, 48px);
+      font-weight: 700;
+      margin-top: 20px;
+      display: none;
+      color: #0f172b;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 5px rgba(251,191,36,0.2);
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      text-align: center;
+      z-index: 15;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #gift:active {
+      transform: scale(0.95);
+      transition: transform 0.1s;
+    }
+
+    audio { display: none; }
+  </style>
+
+  <!-- Lottie Web library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+</head>
+<body>
+
+  <h2 id="heading">🎁 tap the gift</h2>
+  <div id="gift" onclick="handleGiftTap()">🎁</div>
+  <div id="lottie-container"></div>
+  <div id="result"></div>
+  <div id="winner">🎉 Congratulations! You Won 🎉</div>
+  
+  <audio id="giftSound" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3" type="audio/mpeg">
+  </audio>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    (function() {
+      const gift = document.getElementById('gift');
+      const heading = document.getElementById('heading');
+      const resultDiv = document.getElementById('result');
+      const winnerDiv = document.getElementById('winner');
+      const sound = document.getElementById('giftSound');
+      const canvas = document.getElementById('confettiCanvas');
+      const lottieContainer = document.getElementById('lottie-container');
+      
+      let isOpened = false;
+      let confettiActive = false;
+      let pieces = [];
+      let animationFrame = null;
+      let lottieInstance = null;
+
+      // 10 random gift images
+      const giftImages = [
+ 'https://i.ibb.co/XZPwr5yZ/72e9ca134c76.webp',
+'https://i.ibb.co/VWrKK9RK/0c3553d4146f.webp',
+'https://i.ibb.co/XMYddsK/e64f29572947.webp',
+'https://i.ibb.co/SD3Pkpgg/a211cdc70998.webp',
+'https://i.ibb.co/v6j42WpH/c9f8cc340d2f.webp',
+'https://i.ibb.co/XxHYxf0t/8874cad71858.webp',
+'https://i.ibb.co/WW6sgxL5/ba5fad72998d.webp',
+'https://i.ibb.co/wTht06f/a0c057eb8b0c.webp',
+'https://i.ibb.co/VWGpX3GS/978dc084b8d6.webp',
+'https://i.ibb.co/7tW8QKTJ/a2c78d337a98.webp'
+      ];
+
+      // confetti functions
+      function initConfetti(width, height) {
+        const newPieces = [];
+        for (let i = 0; i < 180; i++) {
+          newPieces.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 6 + 3,
+            speedY: Math.random() * 3 + 2,
+            color: `hsl(${Math.random() * 360}, 85%, 65%)`,
+            angle: Math.random() * Math.PI * 2,
+          });
+        }
+        return newPieces;
+      }
+
+      function startConfetti() {
+        if (confettiActive) return;
+        confettiActive = true;
+
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        pieces = initConfetti(w, h);
+
+        function drawConfetti() {
+          if (!confettiActive) return;
+
+          const currentW = window.innerWidth;
+          const currentH = window.innerHeight;
+          
+          if (canvas.width !== currentW || canvas.height !== currentH) {
+            canvas.width = currentW;
+            canvas.height = currentH;
+            pieces.forEach(p => {
+              p.x = (p.x / canvas.width) * currentW || Math.random() * currentW;
+              p.y = (p.y / canvas.height) * currentH || Math.random() * currentH;
+            });
+          }
+
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          for (let i = 0; i < pieces.length; i++) {
+            const p = pieces[i];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.shadowColor = 'rgba(255,255,255,0.5)';
+            ctx.shadowBlur = 4;
+            
+            p.y += p.speedY * 0.6;
+            p.x += Math.sin(p.angle) * 0.4;
+            p.angle += 0.02;
+
+            if (p.y > canvas.height + 20) {
+              p.y = -20;
+              p.x = Math.random() * canvas.width;
+            }
+            if (p.x > canvas.width + 20) p.x = -20;
+            if (p.x < -20) p.x = canvas.width + 20;
+          }
+
+          animationFrame = requestAnimationFrame(drawConfetti);
+        }
+
+        drawConfetti();
+      }
+
+      window.addEventListener('resize', () => {
+        if (confettiActive) {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+      });
+
+      // main gift tap handler
+      window.handleGiftTap = function() {
+        if (isOpened) return;
+        isOpened = true;
+
+        if (sound) {
+          sound.play().catch(e => console.log('audio play error', e));
+        }
+
+        gift.classList.add('open');
+
+        setTimeout(() => {
+          gift.style.display = 'none';
+          heading.style.display = 'none';
+          
+          lottieContainer.style.display = 'flex';
+          
+          if (!lottieInstance) {
+            lottieInstance = lottie.loadAnimation({
+              container: lottieContainer,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              path: 'animation.json'  // external JSON file
+            });
+          }
+
+          const randomIndex = Math.floor(Math.random() * giftImages.length);
+          const imgUrl = giftImages[randomIndex];
+
+          const preloadImg = new Image();
+          preloadImg.src = imgUrl;
+
+          preloadImg.onload = function() {
+            if (lottieInstance) {
+              lottieInstance.destroy();
+              lottieInstance = null;
+            }
+            lottieContainer.style.display = 'none';
+            resultDiv.innerHTML = `<img src="${imgUrl}" alt="random gift" />`;
+            winnerDiv.style.display = 'block';
+            startConfetti();
+          };
+
+          preloadImg.onerror = function() {
+            if (lottieInstance) {
+              lottieInstance.destroy();
+              lottieInstance = null;
+            }
+            lottieContainer.style.display = 'none';
+            resultDiv.innerHTML = `<img src="${giftImages[0]}" alt="fallback gift" />`;
+            winnerDiv.style.display = 'block';
+            startConfetti();
+          };
+
+        }, 600);
+      };
+
+      // reset on page load
+      window.addEventListener('load', function() {
+        isOpened = false;
+        gift.style.display = 'inline-block';
+        heading.style.display = 'block';
+        resultDiv.innerHTML = '';
+        winnerDiv.style.display = 'none';
+        gift.classList.remove('open');
+        lottieContainer.style.display = 'none';
+        
+        if (lottieInstance) {
+          lottieInstance.destroy();
+          lottieInstance = null;
+        }
+        
+        if (confettiActive) {
+          confettiActive = false;
+          if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+            animationFrame = null;
+          }
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        confettiActive = false;
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>
