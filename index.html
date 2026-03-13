@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1000, maximum-scale=1.0, user-scalable=yes">
-  <title>🎁 open · gift box</title>
+  <title>🎁 गिफ्ट · लोडिंग एनिमेशन</title>
   <style>
-    /* RESET & GLOBAL — pure white background, modern clean look */
     * {
       margin: 0;
       padding: 0;
@@ -15,21 +14,19 @@
     }
 
     body {
-      background: #ffffff;           /* pure white background */
+      background: #ffffff;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
       padding: 1.5rem 1.2rem;
-      margin: 0;
       position: relative;
       overflow-x: hidden;
-      color: #1e293b;                /* dark slate for text */
+      color: #1e293b;
     }
 
-    /* main heading – subtle, disappears after opening */
     h2 {
       font-size: 2rem;
       font-weight: 500;
@@ -45,24 +42,20 @@
       z-index: 10;
     }
 
-    /* ----- GIFT BOX (emoji but large & boxlike) ----- */
     #gift {
-      font-size: clamp(140px, 60vw, 300px);  /* 60% of screen width, huge & responsive */
+      font-size: clamp(140px, 60vw, 300px);
       line-height: 1;
       cursor: pointer;
       display: inline-block;
       transform-origin: center center;
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       filter: drop-shadow(0 12px 18px rgba(0,0,0,0.1));
-      animation: bounceIn 0.7s ease forwards;   /* popping entry animation */
+      animation: bounceIn 0.7s ease forwards;
       margin: 0.2rem 0;
       text-shadow: 2px 8px 12px rgba(0,0,0,0.08);
       z-index: 20;
-      /* extra gift personality */
-      transform: scale(1);
     }
 
-    /* popping / bounce animation on page load */
     @keyframes bounceIn {
       0% { transform: scale(0.2); opacity: 0; }
       50% { transform: scale(1.2); opacity: 1; }
@@ -70,13 +63,22 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    /* opening animation: playful shake + scale */
     #gift.open {
       transform: scale(1.5) rotate(8deg) !important;
       transition: transform 0.4s cubic-bezier(0.25, 1.3, 0.5, 1.2);
     }
 
-    /* result image container */
+    #lottie-container {
+      width: min(400px, 80vw);
+      height: min(400px, 80vw);
+      margin: 1rem auto;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+      border-radius: 32px;
+    }
+
     #result {
       width: 100%;
       display: flex;
@@ -84,10 +86,9 @@
       margin: 1rem 0 0.5rem;
     }
 
-    /* gift image — full width, centered, smooth pop */
     #result img {
       width: 100%;
-      max-width: 500px;        /* extra large but stays centered */
+      max-width: 500px;
       height: auto;
       border-radius: 32px;
       box-shadow: 0 20px 30px -8px rgba(0,0,0,0.15);
@@ -102,7 +103,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    /* big congratulations message */
     #winner {
       font-size: clamp(28px, 8vw, 48px);
       font-weight: 700;
@@ -117,11 +117,9 @@
       letter-spacing: -0.5px;
       line-height: 1.2;
       text-align: center;
-      padding: 0 0.2rem;
       z-index: 15;
     }
 
-    /* confetti canvas – fullscreen, no blocking */
     canvas {
       position: fixed;
       top: 0;
@@ -132,123 +130,104 @@
       z-index: 30;
     }
 
-    /* hide heading & gift after open – we control via js */
     .hidden {
       display: none !important;
     }
 
-    /* little extra style for smoothness */
     #gift:active {
       transform: scale(0.95);
       transition: transform 0.1s;
     }
 
-    /* no extra distractions */
-    audio {
-      display: none;
-    }
+    audio { display: none; }
   </style>
+
+  <!-- Lottie Web library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 </head>
 <body>
 
-  <h2 id="heading">🎁 tap the gift</h2>
-
-  <!-- large gift box (emoji, but behaves like a box) -->
+  <h2 id="heading">🎁 उपहार खोलें</h2>
   <div id="gift" onclick="handleGiftTap()">🎁</div>
-
-  <!-- container for the random gift image -->
+  <div id="lottie-container"></div>
   <div id="result"></div>
-
-  <!-- big winner message -->
-  <div id="winner">🎉 Congratulations! You Won 🎉</div>
-
-  <!-- hidden audio for opening effect -->
+  <div id="winner">🎉 बधाई हो! आप जीत गए 🎉</div>
+  
   <audio id="giftSound" preload="auto">
     <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3" type="audio/mpeg">
-    <!-- fallback – just in case, but the url should work -->
   </audio>
 
-  <!-- confetti canvas -->
   <canvas id="confettiCanvas"></canvas>
 
   <script>
     (function() {
-      // --- DOM elements ---
       const gift = document.getElementById('gift');
       const heading = document.getElementById('heading');
       const resultDiv = document.getElementById('result');
       const winnerDiv = document.getElementById('winner');
       const sound = document.getElementById('giftSound');
       const canvas = document.getElementById('confettiCanvas');
+      const lottieContainer = document.getElementById('lottie-container');
       
-      // --- state ---
-      let isOpened = false;             // prevent double tap
+      let isOpened = false;
       let confettiActive = false;
       let pieces = [];
       let animationFrame = null;
+      let lottieInstance = null;
 
-      // --- 10 random gift images (variety from picsum, some fixed for consistency) ---
+      // 10 random gift images
       const giftImages = [
-        'https://picsum.photos/id/1084/600/800?grayscale',   // gift-like? bear
-        'https://picsum.photos/id/100/600/800',              // camera
-        'https://picsum.photos/id/1015/600/800',             // mountains
-        'https://picsum.photos/id/1043/600/800',             // face
-        'https://picsum.photos/id/1/600/800',                // laptop
-        'https://picsum.photos/id/145/600/800',              // sand
-        'https://picsum.photos/id/15/600/800',                // leaves
-        'https://picsum.photos/id/16/600/800',                // waterfall
-        'https://picsum.photos/id/17/600/800',                // valley
-        'https://picsum.photos/id/18/600/800'                 // barn
+        'https://picsum.photos/id/1084/600/800?grayscale',
+        'https://picsum.photos/id/100/600/800',
+        'https://picsum.photos/id/1015/600/800',
+        'https://picsum.photos/id/1043/600/800',
+        'https://picsum.photos/id/1/600/800',
+        'https://picsum.photos/id/145/600/800',
+        'https://picsum.photos/id/15/600/800',
+        'https://picsum.photos/id/16/600/800',
+        'https://picsum.photos/id/17/600/800',
+        'https://picsum.photos/id/18/600/800'
       ];
 
-      // ---------- helper: generate confetti pieces (colorful) ----------
+      // confetti functions (same as before)
       function initConfetti(width, height) {
         const newPieces = [];
         for (let i = 0; i < 180; i++) {
           newPieces.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            r: Math.random() * 6 + 3,            // radius 3–9px
-            speedY: Math.random() * 3 + 2,        // falling speed
-            color: `hsl(${Math.random() * 360}, 85%, 65%)`, // vibrant
+            r: Math.random() * 6 + 3,
+            speedY: Math.random() * 3 + 2,
+            color: `hsl(${Math.random() * 360}, 85%, 65%)`,
             angle: Math.random() * Math.PI * 2,
           });
         }
         return newPieces;
       }
 
-      // ---------- start confetti animation ----------
       function startConfetti() {
         if (confettiActive) return;
         confettiActive = true;
 
-        // set canvas size to current window
         const w = window.innerWidth;
         const h = window.innerHeight;
         canvas.width = w;
         canvas.height = h;
-
-        // create pieces with fresh colors
         pieces = initConfetti(w, h);
 
-        // drawing function
         function drawConfetti() {
           if (!confettiActive) return;
 
-          // always match canvas size (in case of orientation change)
           const currentW = window.innerWidth;
           const currentH = window.innerHeight;
           
           if (canvas.width !== currentW || canvas.height !== currentH) {
             canvas.width = currentW;
             canvas.height = currentH;
-            // rescale existing pieces proportionally (avoid sharp reset)
             pieces.forEach(p => {
               p.x = (p.x / canvas.width) * currentW || Math.random() * currentW;
               p.y = (p.y / canvas.height) * currentH || Math.random() * currentH;
             });
-            canvas.width = currentW;
-            canvas.height = currentH;
           }
 
           const ctx = canvas.getContext('2d');
@@ -256,24 +235,17 @@
 
           for (let i = 0; i < pieces.length; i++) {
             const p = pieces[i];
-            
-            // draw confetti piece (circle)
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.fill();
-
-            // add slight sparkle / variation
             ctx.shadowColor = 'rgba(255,255,255,0.5)';
             ctx.shadowBlur = 4;
             
-            // move piece
-            p.y += p.speedY * 0.6;  // smooth fall
-            // slight horizontal drift for natural effect
+            p.y += p.speedY * 0.6;
             p.x += Math.sin(p.angle) * 0.4;
             p.angle += 0.02;
 
-            // reset if below canvas
             if (p.y > canvas.height + 20) {
               p.y = -20;
               p.x = Math.random() * canvas.width;
@@ -288,105 +260,120 @@
         drawConfetti();
       }
 
-      // ---------- stop confetti (if needed, but we keep it forever) ----------
-      // not needed, but we can stop if required – we let it run
-
-      // ---------- window resize: smoothly update confetti ----------
       window.addEventListener('resize', () => {
         if (confettiActive) {
-          const w = window.innerWidth;
-          const h = window.innerHeight;
-          canvas.width = w;
-          canvas.height = h;
-          // no need to regenerate, draw loop adjusts positions proportionally 
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
         }
       });
 
-      // ---------- main gift opening logic ----------
+      // मुख्य फंक्शन: गिफ्ट क्लिक पर
       window.handleGiftTap = function() {
-        // prevent double opening / multiple taps
         if (isOpened) return;
         isOpened = true;
 
-        // 1. play gift opening sound (with user interaction)
+        // sound play
         if (sound) {
-          sound.play().catch(e => console.log('audio play prevented (autoplay policy), but tap is ok, usually works', e));
+          sound.play().catch(e => console.log('audio play error', e));
         }
 
-        // 2. add opening animation class
         gift.classList.add('open');
 
-        // 3. after short animation, replace with image & winner, hide gift/heading
+        // गिफ्ट को छुपाओ और Lottie container दिखाओ
         setTimeout(() => {
-          // pick random image from array
+          gift.style.display = 'none';
+          heading.style.display = 'none';
+          
+          // Lottie एनिमेशन शुरू करो (अगर पहले से नहीं चल रहा)
+          lottieContainer.style.display = 'flex';
+          
+          // Lottie JSON फाइल को लोड करो (animation.json उसी फोल्डर में)
+          if (!lottieInstance) {
+            lottieInstance = lottie.loadAnimation({
+              container: lottieContainer,
+              renderer: 'svg',
+              loop: true,
+              autoplay: true,
+              path: 'animation.json'  // यहाँ external JSON file का path
+            });
+          }
+
+          // अब random image पहले से लोड करना शुरू करो
           const randomIndex = Math.floor(Math.random() * giftImages.length);
           const imgUrl = giftImages[randomIndex];
 
-          // inject image into result div
-          resultDiv.innerHTML = `<img src="${imgUrl}" alt="random gift" />`;
+          // एक hidden image बनाओ यह देखने के लिए कि वह लोड हुई या नहीं
+          const preloadImg = new Image();
+          preloadImg.src = imgUrl;
 
-          // show winner message
-          winnerDiv.style.display = 'block';
+          // जैसे ही image लोड हो, एनिमेशन हटाकर image दिखाओ
+          preloadImg.onload = function() {
+            // Lottie बंद करो और container छुपाओ
+            if (lottieInstance) {
+              lottieInstance.destroy();
+              lottieInstance = null;
+            }
+            lottieContainer.style.display = 'none';
 
-          // hide gift and heading smoothly
-          gift.style.display = 'none';
-          heading.style.display = 'none';
+            // image inject करो
+            resultDiv.innerHTML = `<img src="${imgUrl}" alt="random gift" />`;
+            winnerDiv.style.display = 'block';
+            
+            // confetti शुरू करो
+            startConfetti();
+          };
 
-          // 4. start colorful confetti
-          startConfetti();
+          // अगर image लोड होने में बहुत देर हो (network issue), तो भी कुछ देर बाद दिखा दो
+          // ये optional है, लेकिन अच्छा रहेगा
+          preloadImg.onerror = function() {
+            // fallback: कोई दूसरी image या वही try करो
+            if (lottieInstance) {
+              lottieInstance.destroy();
+              lottieInstance = null;
+            }
+            lottieContainer.style.display = 'none';
+            resultDiv.innerHTML = `<img src="${giftImages[0]}" alt="fallback gift" />`;
+            winnerDiv.style.display = 'block';
+            startConfetti();
+          };
 
-        }, 600); // wait 0.6s to enjoy opening animation
+        }, 600); // गिफ्ट के open एनिमेशन के बाद
       };
 
-      // optional: pre-tap safeguard — ensure no double calls from rapid taps
-      // we already have isOpened flag.
-
-      // clean up animation frame on page unload (good practice)
-      window.addEventListener('beforeunload', () => {
-        if (animationFrame) {
-          cancelAnimationFrame(animationFrame);
-        }
-      });
-
-      // tiny extra: ensure gift is visible if someone reloads mid-state
-      // but we want fresh start always: reset on page load
+      // पेज लोड या रीलोड पर रीसेट
       window.addEventListener('load', function() {
-        // reset all to initial (in case of back navigation)
         isOpened = false;
         gift.style.display = 'inline-block';
         heading.style.display = 'block';
         resultDiv.innerHTML = '';
         winnerDiv.style.display = 'none';
         gift.classList.remove('open');
-        // stop any confetti from previous session
+        lottieContainer.style.display = 'none';
+        
+        if (lottieInstance) {
+          lottieInstance.destroy();
+          lottieInstance = null;
+        }
+        
         if (confettiActive) {
           confettiActive = false;
           if (animationFrame) {
             cancelAnimationFrame(animationFrame);
             animationFrame = null;
           }
-          // clear canvas
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-        // reset confetti flag
         confettiActive = false;
       });
 
-      // also orientation/resize already handled inside draw
+      window.addEventListener('beforeunload', () => {
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+      });
+
     })();
   </script>
-
-  <!-- tiny extra style for white background guarantee -->
-  <style>
-    /* ensure white stays white */
-    body { background: #ffffff; }
-    /* make winner message pop on white */
-    #winner {
-      -webkit-text-stroke: 1px rgba(255,255,255,0.5);
-    }
-    /* gift subtle hover (but mobile doesn't hover) */
-  </style>
-
 </body>
 </html>
