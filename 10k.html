@@ -204,7 +204,6 @@
       margin: 0;
       width: 100%;
       position: relative;
-      /* ensure the column itself is centered */
       text-align: center;
     }
 
@@ -218,9 +217,7 @@
       text-shadow: 2px 8px 16px rgba(0,0,0,0.05);
       z-index: 20;
       position: relative;
-      /* No transition on transform by default, only for scale-up */
       transition: transform 0.2s;
-      /* Ensure it doesn't move during shake */
       will-change: transform;
     }
 
@@ -317,7 +314,7 @@
       border-radius: 32px;
     }
 
-    /* winner card - centered exactly where gift was */
+    /* winner card - centered below shop name */
     #result {
       width: 100%;
       display: flex;
@@ -336,11 +333,12 @@
       align-items: center;
       animation: popWinner 0.6s cubic-bezier(0.21, 1.11, 0.38, 1.1);
       margin: 0 auto;
+      max-width: 90vw;
     }
 
     .winner-card img {
       width: 100%;
-      max-width: 300px;
+      max-width: 400px;  /* larger image */
       height: auto;
       border-radius: 24px;
       object-fit: cover;
@@ -355,22 +353,22 @@
     }
 
     #winner {
-      font-size: clamp(26px, 6vw, 44px);
+      font-size: clamp(28px, 6vw, 48px);
       font-weight: 600;
-      margin-top: 24px;
+      margin-top: 1.5rem;
       display: none;
       color: #1e3a5f;
       letter-spacing: -0.5px;
       font-family: 'Playfair Display', serif;
-      white-space: nowrap;
       z-index: 15;
       text-align: center;
+      width: 100%;
     }
 
     /* hide side items, sparkles, heading when gift opened */
     body.gift-opened .side-left,
     body.gift-opened .side-right {
-      display: none; /* completely remove from layout */
+      display: none;
     }
 
     body.gift-opened .sparkle {
@@ -435,6 +433,33 @@
       .logo-icon span {
         font-size: 2.6rem;
       }
+      .winner-card img {
+        max-width: 300px;
+      }
+    }
+
+    /* ---------- ADDED FIX: center winner image directly below shop name ---------- */
+    body.gift-opened .poster-grid {
+      margin-top: 0;
+      gap: 0;
+    }
+    body.gift-opened .gift-center {
+      margin: 0;
+      padding: 0;
+    }
+    body.gift-opened #result {
+      margin-top: 0;
+    }
+    body.gift-opened #winner {
+      margin-top: 20px; /* small space between image and text */
+    }
+    /* ---------- ADDITIONAL FIX FOR PERFECT HORIZONTAL CENTERING ---------- */
+    body.gift-opened .poster-grid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
@@ -627,13 +652,6 @@
         if (isOpened) return;
         isOpened = true;
 
-        // Hide side items and sparkles only after opening (they remain visible during shake)
-        // We'll add class after animation starts? No, we want them visible during shake.
-        // So we add gift-opened class at the very end? Actually we want them hidden after opening.
-        // But the user wants side images visible during shake. So we should NOT hide them immediately.
-        // We'll hide them after the gift disappears.
-        // So we remove the immediate class addition and do it later.
-
         if (sound) {
           sound.play().catch(e => console.log('audio play error', e));
         }
@@ -670,7 +688,7 @@
           heading.style.display = 'none';
           tearLine.style.height = '0';
           
-          // Now hide side items and sparkles by adding class
+          // Now hide side items and sparkles
           document.body.classList.add('gift-opened');
           
           lottieContainer.style.display = 'flex';
