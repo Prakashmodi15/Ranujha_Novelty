@@ -90,14 +90,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid rgba(255, 215, 175, 0.3); /* subtle warm border */
+      border: 2px solid rgba(255, 215, 175, 0.3);
     }
 
     .logo-icon span {
       font-family: 'Playfair Display', serif;
       font-size: 3.2rem;
       font-weight: 900;
-      color: #f3e2d2;  /* soft off-white with warmth */
+      color: #f3e2d2;
       line-height: 1;
       margin-top: -5px;
       letter-spacing: -2px;
@@ -122,7 +122,7 @@
       font-size: 1.3rem;
       font-weight: 400;
       letter-spacing: 5.5px;
-      color: #9b8a78;  /* warm taupe */
+      color: #9b8a78;
       text-transform: uppercase;
       display: inline-block;
       padding-left: 0.4rem;
@@ -130,7 +130,7 @@
       word-spacing: 2px;
     }
 
-    /* main grid */
+    /* main grid - ensures perfect centering */
     .poster-grid {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -195,7 +195,7 @@
       white-space: nowrap;
     }
 
-    /* gift center */
+    /* gift center - perfectly centered */
     .gift-center {
       display: flex;
       flex-direction: column;
@@ -204,6 +204,8 @@
       margin: 0;
       width: 100%;
       position: relative;
+      /* ensure the column itself is centered */
+      text-align: center;
     }
 
     #gift {
@@ -212,18 +214,40 @@
       cursor: pointer;
       display: inline-block;
       transform-origin: center center;
-      transition: transform 0.2s;
       filter: drop-shadow(0 16px 24px rgba(30,58,95,0.12));
       text-shadow: 2px 8px 16px rgba(0,0,0,0.05);
       z-index: 20;
       position: relative;
+      /* No transition on transform by default, only for scale-up */
+      transition: transform 0.2s;
+      /* Ensure it doesn't move during shake */
+      will-change: transform;
     }
 
+    /* Shake animation - stays centered */
+    #gift.shake {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(15deg); }
+      50% { transform: rotate(-15deg); }
+      75% { transform: rotate(8deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    #gift.scale-up {
+      transform: scale(1.2) !important;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* tear overlay */
     .tear-line {
       position: absolute;
-      top: 0;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       width: 20px;
       height: 0;
       z-index: 30;
@@ -246,23 +270,7 @@
       filter: drop-shadow(0 0 4px #fff9e6);
     }
 
-    #gift.shake {
-      animation: shake 0.3s ease-in-out;
-    }
-
-    @keyframes shake {
-      0% { transform: rotate(0deg); }
-      25% { transform: rotate(15deg); }
-      50% { transform: rotate(-15deg); }
-      75% { transform: rotate(8deg); }
-      100% { transform: rotate(0deg); }
-    }
-
-    #gift.scale-up {
-      transform: scale(1.2) !important;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
+    /* explosion burst */
     .burst {
       position: absolute;
       top: 50%;
@@ -309,11 +317,12 @@
       border-radius: 32px;
     }
 
+    /* winner card - centered exactly where gift was */
     #result {
       width: 100%;
       display: flex;
       justify-content: center;
-      margin: 1.5rem 0 0.5rem;
+      margin: 0;
     }
 
     .winner-card {
@@ -358,9 +367,10 @@
       text-align: center;
     }
 
+    /* hide side items, sparkles, heading when gift opened */
     body.gift-opened .side-left,
     body.gift-opened .side-right {
-      display: none;
+      display: none; /* completely remove from layout */
     }
 
     body.gift-opened .sparkle {
@@ -373,6 +383,7 @@
       pointer-events: none;
     }
 
+    /* confetti canvas */
     canvas {
       position: fixed;
       top: 0;
@@ -437,7 +448,6 @@
   <div class="sparkle">✨</div>
 
   <div class="brand-header">
-    <!-- Exact logo as per image: navy circle with elegant "R" -->
     <div class="logo-icon">
       <span>R</span>
     </div>
@@ -468,6 +478,7 @@
     <div class="gift-center">
       <h2 id="heading">✨ tap the gift ✨</h2>
       <div id="gift" onclick="handleGiftTap()">🎁</div>
+      <!-- tear overlay positioned exactly over gift -->
       <div class="tear-line" id="tearLine" style="height:0;">
         <svg viewBox="0 0 20 200" preserveAspectRatio="none">
           <path d="M10,0 L8,15 L12,30 L7,45 L13,60 L8,75 L12,90 L6,105 L14,120 L9,135 L11,150 L5,165 L15,180 L8,200" vector-effect="non-scaling-stroke"/>
@@ -616,24 +627,33 @@
         if (isOpened) return;
         isOpened = true;
 
-        document.body.classList.add('gift-opened');
+        // Hide side items and sparkles only after opening (they remain visible during shake)
+        // We'll add class after animation starts? No, we want them visible during shake.
+        // So we add gift-opened class at the very end? Actually we want them hidden after opening.
+        // But the user wants side images visible during shake. So we should NOT hide them immediately.
+        // We'll hide them after the gift disappears.
+        // So we remove the immediate class addition and do it later.
 
         if (sound) {
           sound.play().catch(e => console.log('audio play error', e));
         }
 
+        // STEP 1: shake
         gift.classList.add('shake');
 
+        // STEP 2: tear effect
         setTimeout(() => {
           gift.classList.remove('shake');
           const giftHeight = gift.offsetHeight;
           tearLine.style.height = giftHeight + 'px';
         }, 300);
 
+        // STEP 3: scale up
         setTimeout(() => {
           gift.classList.add('scale-up');
         }, 650);
 
+        // STEP 4: explosion burst and confetti
         setTimeout(() => {
           const burst = document.createElement('div');
           burst.className = 'burst';
@@ -644,10 +664,14 @@
           }, 400);
         }, 850);
 
+        // STEP 5 & 6: gift disappears, lottie appears, and hide side items
         setTimeout(() => {
           gift.style.display = 'none';
           heading.style.display = 'none';
           tearLine.style.height = '0';
+          
+          // Now hide side items and sparkles by adding class
+          document.body.classList.add('gift-opened');
           
           lottieContainer.style.display = 'flex';
           
